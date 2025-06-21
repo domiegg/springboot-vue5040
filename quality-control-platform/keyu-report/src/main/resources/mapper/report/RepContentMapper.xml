@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.keyu.report.mapper.RepContentMapper">
+
+    <resultMap type="RepContent" id="RepContentResult">
+        <result property="id"    column="id"    />
+        <result property="reportTitle"    column="report_title"    />
+        <result property="templateId"    column="template_id"    />
+        <result property="templateName"    column="template_Name"    />
+        <result property="contentJson"    column="content_json"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createByName"    column="create_by_name"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectRepContentVo">
+        select a.id, a.report_title, a.template_id, a.content_json, a.create_by, a.create_time, a.update_by, a.update_time, a.remark, b.template_name, u.nick_name as create_by_name
+        from rep_content a
+        left join rep_template b on b.id = a.template_id
+        left join sys_user u on u.user_id = a.create_by
+    </sql>
+
+    <select id="selectRepContentList" parameterType="RepContent" resultMap="RepContentResult">
+        <include refid="selectRepContentVo"/>
+        <where>
+            <if test="createBy != null and createBy != '' and createBy != '-1'">and FIND_IN_SET(a.create_by, #{createBy})</if>
+            <if test='hospitalIds != null and hospitalIds != "" and hospitalIds != "-1"'>and a.create_by REGEXP CONCAT('(^|,)(', #{hospitalIds}, ')(,|$)')</if>
+            <if test="templateId != null "> and a.template_id = #{templateId}</if>
+            <if test="contentJson != null  and contentJson != ''"> and a.content_json = #{contentJson}</if>
+            <if test="beginDate != '' and beginDate != null and endDate != '' and endDate != null">
+                AND DATE_FORMAT(a.create_time, '%Y-%m-%d') BETWEEN #{beginDate} AND #{endDate}
+            </if>
+            <if test="area != '' and area != null and area != '-1'">
+                AND u.regin_area = #{area}
+            </if>
+        </where>
+        order by a.create_time desc
+    </select>
+
+    <select id="selectRepContentById" parameterType="Long" resultMap="RepContentResult">
+        <include refid="selectRepContentVo"/>
+        where a.id = #{id}
+    </select>
+
+    <insert id="insertRepContent" parameterType="RepContent" useGeneratedKeys="true" keyProperty="id">
+        insert into rep_content
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="reportTitle != null and reportTitle != ''">report_title,</if>
+            <if test="templateId != null">template_id,</if>
+            <if test="contentJson != null and contentJson != ''">content_json,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="reportTitle != null and reportTitle != ''">#{reportTitle},</if>
+            <if test="templateId != null">#{templateId},</if>
+            <if test="contentJson != null and contentJson != ''">#{contentJson},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateRepContent" parameterType="RepContent">
+        update rep_content
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="templateId != null">template_id = #{templateId},</if>
+            <if test="reportTitle != null and reportTitle != ''">report_title = #{reportTitle},</if>
+            <if test="contentJson != null and contentJson != ''">content_json = #{contentJson},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteRepContentById" parameterType="Long">
+        delete from rep_content where id = #{id}
+    </delete>
+
+    <delete id="deleteRepContentByIds" parameterType="String">
+        delete from rep_content where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="countTemplateById" resultType="java.lang.Integer">
+        select count(*) from rep_content
+        where template_id = #{templateId}
+    </select>
+
+    <select id="isSingleTemplate" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM rep_content a
+        WHERE a.create_by = #{hospitalId} AND a.template_id = #{templateId}
+    </select>
+
+    <select id="getAdrsByAreaAndDate" resultType="java.util.HashMap">
+        SELECT ifNUll(COUNT(a.id),0) num, u.nick_name AS title FROM sys_user u
+        LEFT JOIN rep_content a ON a.create_by = u.user_id AND a.template_id = #{templateId}
+        AND DATE_FORMAT(a.create_time, '%Y-%m-%d') BETWEEN #{beginDate} AND #{endDate}
+        <where>
+            <if test="area != '' and area != null and area != '-1'">
+                AND u.regin_area = #{area}
+            </if>
+        </where>
+        GROUP BY u.nick_name ORDER BY num DESC
+    </select>
+
+    <select id="getAdrs" resultType="java.util.HashMap">
+        SELECT COUNT(a.id) num, u.nick_name AS title FROM rep_content a
+        LEFT JOIN sys_user u ON  a.create_by = u.user_id
+        LEFT JOIN rep_template t ON t.id = a.template_id
+        <where>
+            <if test="templateId != null">
+                AND t.id = #{templateId}
+            </if>
+            <if test="year != '' and year != null">
+                AND DATE_FORMAT(a.create_time, '%Y') = #{year}
+            </if>
+            <if test="year == null">
+                AND DATE_FORMAT(a.create_time, '%Y') = DATE_FORMAT(NOW(), '%Y')
+            </if>
+        </where>
+        GROUP BY u.nick_name ORDER BY num DESC
+    </select>
+
+    <select id="getAdrsByMonth" resultType="java.util.HashMap">
+        SELECT '一月' AS month,COUNT(a.id AND date_format(a.create_time, '%m') = '01' OR NULL) AS num
+        FROM rep_content a
+        LEFT JOIN rep_template t ON t.id = a.template_id
+        <where>
+            DATE_FORMAT(a.create_time, '%Y') = DATE_FORMAT(NOW(), '%Y')
+            <if test="hospitalId != '' and hospitalId != null">
+                AND a.create_by = #{hospitalId}
+            </if>
+            <if test="templateId != null">
+                AND t.id = #{templateId}
+            </if>
+        </where>
+        UNION ALL
+        SELECT '二月' AS month,COUNT(a.id AND date_format(a.create_time, '%m') = '02' OR NULL) AS num
+        FROM rep_content a
+        LEFT JOIN rep_template t ON t.id = a.template_id
+        <where>
+            DATE_FORMAT(a.create_time, '%Y') = DATE_FORMAT(NOW(), '%Y')
+            <if test="hospitalId != '' and hospitalId != null">
+                AND a.create_by = #{hospitalId}
+            </if>
+            <if test="templateId != null">
+                AND t.id = #{templateId}
+            </if>
+        </where>
+        UNION ALL
+        SELECT '三月' AS month,COUNT(a.id AND date_format(a.create_time, '%m') = '03' OR NULL) AS num
+        FROM rep_content a
+        LEFT JOIN rep_template t ON t.id = a.template_id
+        <where>
+            DATE_FORMAT(a.create_time, '%Y') = DATE_FORMAT(NOW(), '%Y')
+            <if test="hospitalId != '' and hospitalId != null">
+                AND a.create_by = #{hospitalId}
+            </if>
+            <if test="templateId != null">
+                AND t.id = #{templateId}
+            </if>
+        </where>
+        UNION ALL
+        SELECT '四月' AS month,COUNT(a.id AND date_format(a.create_time, '%m') = '04' OR NULL) AS num
+        FROM rep_content a
+        LEFT JOIN rep_template t ON t.id = a.template_id
+        <where>
+            DATE_FORMAT(a.create_time, '%Y') = DATE_FORMAT(NOW(), '%Y')
+            <if test="hospitalId != '' and hospitalId != null">
+                AND a.create_by = #{hospitalId}
+            </if>
+            <if test="templateId != null">
+                AND t.id = #{templateId}
+            </if>
+        </where>
+        UNION ALL
+        SELECT '五月' AS month,COUNT(a.id AND date_format(a.create_time, '%m') = '05' OR NULL) AS num
+        FROM rep_content a
+        LEFT JOIN rep_template t ON t.id = a.template_id
+        <where>
+            DATE_FORMAT(a.create_time, '%Y') = DATE_FORMAT(NOW(), '%Y')
+            <if test="hospitalId != '' and hospitalId != null">
+                AND a.create_by = #{hospitalId}
+            </if>
+            <if test="templateId != null">
+                AND t.id = #{templateId}
+            </if>
+        </where>
+        UNION ALL
+        SELECT '六月' AS month,COUNT(a.id AND date_format(a.create_time, '%m') = '06' OR NULL) AS num
+        FROM rep_content a
+        LEFT JOIN rep_template t ON t.id = a.template_id
+        <where>
+            DATE_FORMAT(a.create_time, '%Y') = DATE_FORMAT(NOW(), '%Y')
+            <if test="hospitalId != '' and hospitalId != null">
+                AND a.create_by = #{hospitalId}
+            </if>
+            <if test="templateId != null">
+                AND t.id = #{templateId}
+            </if>
+        </where>
+        UNION ALL
+        SELECT '七月' AS month,COUNT(a.id AND date_format(a.create_time, '%m') = '07' OR NULL) AS num
+        FROM rep_content a
+        LEFT JOIN rep_template t ON t.id = a.template_id
+        <where>
+            DATE_FORMAT(a.create_time, '%Y') = DATE_FORMAT(NOW(), '%Y')
+            <if test="hospitalId != '' and hospitalId != null">
+                AND a.create_by = #{hospitalId}
+            </if>
+            <if test="templateId != null">
+                AND t.id = #{templateId}
+            </if>
+        </where>
+        UNION ALL
+        SELECT '八月' AS month,COUNT(a.id AND date_format(a.create_time, '%m') = '08' OR NULL) AS num
+        FROM rep_content a
+        LEFT JOIN rep_template t ON t.id = a.template_id
+        <where>
+            DATE_FORMAT(a.create_time, '%Y') = DATE_FORMAT(NOW(), '%Y')
+            <if test="hospitalId != '' and hospitalId != null">
+                AND a.create_by = #{hospitalId}
+            </if>
+            <if test="templateId != null">
+                AND t.id = #{templateId}
+            </if>
+        </where>
+        UNION ALL
+        SELECT '九月' AS month,COUNT(a.id AND date_format(a.create_time, '%m') = '09' OR NULL) AS num
+        FROM rep_content a
+        LEFT JOIN rep_template t ON t.id = a.template_id
+        <where>
+            DATE_FORMAT(a.create_time, '%Y') = DATE_FORMAT(NOW(), '%Y')
+            <if test="hospitalId != '' and hospitalId != null">
+                AND a.create_by = #{hospitalId}
+            </if>
+            <if test="templateId != null">
+                AND t.id = #{templateId}
+            </if>
+        </where>
+        UNION ALL
+        SELECT '十月' AS month,COUNT(a.id AND date_format(a.create_time, '%m') = '10' OR NULL) AS num
+        FROM rep_content a
+        LEFT JOIN rep_template t ON t.id = a.template_id
+        <where>
+            DATE_FORMAT(a.create_time, '%Y') = DATE_FORMAT(NOW(), '%Y')
+            <if test="hospitalId != '' and hospitalId != null">
+                AND a.create_by = #{hospitalId}
+            </if>
+            <if test="templateId != null">
+                AND t.id = #{templateId}
+            </if>
+        </where>
+        UNION ALL
+        SELECT '十一月' AS month,COUNT(a.id AND date_format(a.create_time, '%m') = '11' OR NULL) AS num
+        FROM rep_content a
+        LEFT JOIN rep_template t ON t.id = a.template_id
+        <where>
+            DATE_FORMAT(a.create_time, '%Y') = DATE_FORMAT(NOW(), '%Y')
+            <if test="hospitalId != '' and hospitalId != null">
+                AND a.create_by = #{hospitalId}
+            </if>
+            <if test="templateId != null">
+                AND t.id = #{templateId}
+            </if>
+        </where>
+        UNION ALL
+        SELECT '十二月' AS month,COUNT(a.id AND date_format(a.create_time, '%m') = '12' OR NULL) AS num
+        FROM rep_content a
+        LEFT JOIN rep_template t ON t.id = a.template_id
+        <where>
+            DATE_FORMAT(a.create_time, '%Y') = DATE_FORMAT(NOW(), '%Y')
+            <if test="hospitalId != '' and hospitalId != null">
+                AND a.create_by = #{hospitalId}
+            </if>
+            <if test="templateId != null">
+                AND t.id = #{templateId}
+            </if>
+        </where>
+    </select>
+
+    <select id="getAdrsByHospital" resultType="java.util.HashMap">
+        SELECT COUNT(a.id) num, u.nick_name AS hospitalName FROM rep_content a
+        LEFT JOIN sys_user u ON u.user_id = a.create_by
+        <where>
+            a.template_id = 95
+            <if test="hospitalId != null and hospitalId != '-1'">
+                AND FIND_IN_SET(a.create_by, #{hospitalId})
+            </if>
+            <if test="beginDate != '' and beginDate != null and endDate != '' and endDate != null">
+                AND DATE_FORMAT(a.create_time, '%Y-%m-%d') BETWEEN #{beginDate} AND #{endDate}
+            </if>
+        </where>
+        GROUP BY hospitalName
+    </select>
+
+    <select id="getAdrsByArea" resultType="java.util.HashMap">
+        SELECT COUNT(a.id) num, u.regin_area AS reginArea FROM rep_content a
+        LEFT JOIN sys_user u ON u.user_id = a.create_by
+        <where>
+                a.template_id = 95
+            <if test="area != '' and area != null and area != '-1'">
+                AND u.regin_area = #{area}
+            </if>
+            <if test="beginDate != '' and beginDate != null and endDate != '' and endDate != null">
+                AND DATE_FORMAT(a.create_time, '%Y-%m-%d') BETWEEN #{beginDate} AND #{endDate}
+            </if>
+        </where>
+        GROUP BY reginArea
+    </select>
+</mapper>

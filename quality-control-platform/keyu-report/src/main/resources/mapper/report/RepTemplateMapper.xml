@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.keyu.report.mapper.RepTemplateMapper">
+
+    <resultMap type="RepTemplate" id="RepTemplateResult">
+        <result property="id"    column="id"    />
+        <result property="classifyId"    column="classify_id"    />
+        <result property="classifyName"    column="classify_name"    />
+        <result property="templateName"    column="template_name"    />
+        <result property="reportNum"    column="report_num"    />
+        <result property="formProperty"    column="form_property"    />
+        <result property="unitProperty"    column="unit_property"    />
+        <result property="createByName"    column="create_by_name"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectRepTemplateVo">
+        select a.id, a.classify_id, a.template_name, a.report_num, a.form_property, a.unit_property, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
+               c.classify_name, u.nick_name as create_by_name
+        from rep_template a
+        LEFT JOIN rep_classify c on c.id = a.classify_id
+        LEFT JOIN sys_user u on u.user_id = a.create_by
+    </sql>
+
+    <select id="selectRepTemplateList" parameterType="RepTemplate" resultMap="RepTemplateResult">
+        <include refid="selectRepTemplateVo"/>
+        <where>
+            <if test="classifyId != null "> and classify_id = #{classifyId}</if>
+            <if test="templateName != null  and templateName != ''"> and template_name like concat('%', #{templateName}, '%')</if>
+            <if test="formProperty != null  and formProperty != ''"> and form_property = #{formProperty}</if>
+            <if test="unitProperty != null  and unitProperty != ''"> and unit_property = #{unitProperty}</if>
+        </where>
+        order by a.create_time desc
+    </select>
+
+    <select id="selectRepTemplateById" parameterType="Long" resultMap="RepTemplateResult">
+        <include refid="selectRepTemplateVo"/>
+        where a.id = #{id}
+    </select>
+
+    <insert id="insertRepTemplate" parameterType="RepTemplate" useGeneratedKeys="true" keyProperty="id">
+        insert into rep_template
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="classifyId != null">classify_id,</if>
+            <if test="templateName != null and templateName != ''">template_name,</if>
+            <if test="reportNum != null">report_num,</if>
+            <if test="formProperty != null">form_property,</if>
+            <if test="unitProperty != null">unit_property,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="classifyId != null">#{classifyId},</if>
+            <if test="templateName != null and templateName != ''">#{templateName},</if>
+            <if test="reportNum != null">#{reportNum},</if>
+            <if test="formProperty != null">#{formProperty},</if>
+            <if test="unitProperty != null">#{unitProperty},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateRepTemplate" parameterType="RepTemplate">
+        update rep_template
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="classifyId != null">classify_id = #{classifyId},</if>
+            <if test="templateName != null and templateName != ''">template_name = #{templateName},</if>
+            <if test="reportNum != null">report_num = #{reportNum},</if>
+            <if test="formProperty != null">form_property = #{formProperty},</if>
+            <if test="unitProperty != null">unit_property = #{unitProperty},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteRepTemplateById" parameterType="Long">
+        delete from rep_template where id = #{id}
+    </delete>
+
+    <delete id="deleteRepTemplateByIds" parameterType="String">
+        delete from rep_template where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="getRepTemplateList" resultType="com.keyu.report.domain.RepTemplate">
+        select a.id, a.template_name as templateName
+        from rep_template a
+    </select>
+
+    <select id="countClassifyById" resultType="java.lang.Integer">
+        select count(id) from rep_template
+        where classify_id = #{classify_id}
+    </select>
+</mapper>

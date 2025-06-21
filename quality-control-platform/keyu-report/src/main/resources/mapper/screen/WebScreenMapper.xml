@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.keyu.screen.mapper.WebScreenMapper">
+
+   <select id="getHospitalCount" resultType="java.util.Map">
+       SELECT 1 AS generalNum, 12 AS regionNum,
+              (SELECT COUNT(distinct nick_name) FROM sys_user
+               WHERE del_flag = 0 AND STATUS = 0 AND user_name NOT IN ('admin', 'ry', 'zrl', 'szkb')
+              ) AS hospitalNum
+       FROM DUAL
+   </select>
+
+    <select id="getOriginCount" resultType="java.util.Map">
+        SELECT a.regin_area AS title, COUNT(distinct a.nick_name) AS num
+        FROM sys_user a
+        WHERE del_flag = 0 AND STATUS = 0 AND a.regin_area IS NOT NULL
+        GROUP BY title ORDER BY num
+    </select>
+
+    <select id="getHospitalPosition" resultType="java.util.Map">
+        SELECT nick_name as title, position FROM sys_user
+        WHERE del_flag = 0 AND status = 0
+        GROUP BY title
+    </select>
+
+    <select id="getReportRank" resultType="java.util.Map">
+        SELECT COUNT(a.id) AS num, u.nick_name AS title, ROUND((COUNT(a.id) / (SELECT COUNT(*) FROM rep_content)) * 100) AS percent
+        FROM rep_content a
+                 LEFT JOIN sys_user u ON a.create_by = u.user_id
+        GROUP BY title
+        ORDER BY num DESC
+    </select>
+</mapper>

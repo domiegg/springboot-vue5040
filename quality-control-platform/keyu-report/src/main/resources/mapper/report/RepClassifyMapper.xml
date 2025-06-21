@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.keyu.report.mapper.RepClassifyMapper">
+
+    <resultMap type="RepClassify" id="RepClassifyResult">
+        <result property="id"    column="id"    />
+        <result property="classifyName"    column="classify_name"    />
+        <result property="sort"    column="sort"    />
+        <result property="createByName"    column="create_by_name"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectRepClassifyVo">
+        select a.id, a.classify_name, a.sort, a.create_by, a.create_time, a.update_by, a.update_time, a.remark, u.nick_name as create_by_name
+        from rep_classify a
+        left join sys_user u on u.user_id = a.create_by
+    </sql>
+
+    <select id="selectRepClassifyList" parameterType="RepClassify" resultMap="RepClassifyResult">
+        <include refid="selectRepClassifyVo"/>
+        <where>
+            <if test="classifyName != null  and classifyName != ''"> and a.classify_name like concat('%', #{classifyName}, '%')</if>
+            <if test="sort != null "> and a.sort = #{sort}</if>
+        </where>
+        order by a.sort
+    </select>
+
+    <select id="selectRepClassifyById" parameterType="Long" resultMap="RepClassifyResult">
+        <include refid="selectRepClassifyVo"/>
+        where a.id = #{id}
+    </select>
+
+    <insert id="insertRepClassify" parameterType="RepClassify" useGeneratedKeys="true" keyProperty="id">
+        insert into rep_classify
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="classifyName != null">classify_name,</if>
+            <if test="sort != null">sort,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="classifyName != null">#{classifyName},</if>
+            <if test="sort != null">#{sort},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateRepClassify" parameterType="RepClassify">
+        update rep_classify
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="classifyName != null">classify_name = #{classifyName},</if>
+            <if test="sort != null">sort = #{sort},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteRepClassifyById" parameterType="Long">
+        delete from rep_classify where id = #{id}
+    </delete>
+
+    <delete id="deleteRepClassifyByIds" parameterType="String">
+        delete from rep_classify where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="getReportClassifySelectList" resultType="com.keyu.report.domain.RepClassify">
+        SELECT id, classify_name AS classifyName FROM rep_classify
+    </select>
+</mapper>
